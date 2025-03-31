@@ -28,6 +28,9 @@
 #include "MediaFilePanel.h"
 #include "Plater.hpp"
 #include "BindDialog.hpp"
+#include "GCodeViewer.hpp" // Added for GCodeViewer access
+#include "GLCanvas3D.hpp"  // Added for GLCanvas3D access
+#include "IMSlider.hpp"    // Added for IMSlider access
 
 namespace Slic3r {
 namespace GUI {
@@ -276,6 +279,38 @@ void MonitorPanel::on_update_all(wxMouseEvent &event)
 {
      if (update_flag) {
          update_all();
+
+         // --- Sync Layer Preview Logic ---
+         if (obj && obj->is_connected() && obj->is_in_printing() && !obj->is_in_prepare() && wxGetApp().app_config->get_bool("sync_layer_preview"))
+         {
+             Plater* plater = wxGetApp().plater();
+             if (plater && plater->is_preview_shown()) {
+                 GLCanvas3D* canvas = plater->get_preview_canvas3D();
+                 if (canvas) {
+                     GCodeViewer& gcode_viewer = canvas->get_gcode_viewer();
+                     IMSlider* layer_slider = gcode_viewer.get_layers_slider();
+                     if (layer_slider && !gcode_viewer.get_layers_zs().empty()) {
+                         int total_layers = (int)gcode_viewer.get_layers_zs().size();
+                         int current_layer_from_printer = obj->curr_layer;
+
+                         // Layer numbers seem 0-based in MachineObject and slider
+                         if (current_layer_from_printer >= 0 && current_layer_from_printer < total_layers) {
+                             // Only update if the slider isn't currently being dragged by the user
+                             if (!layer_slider->is_dragging()) {
+                                 // Check if the value actually needs changing to avoid unnecessary updates/refreshes
+                                 if (layer_slider->GetHigherValue() != current_layer_from_printer) {
+                                     layer_slider->SetHigherValue(current_layer_from_printer);
+                                     // Force a refresh of the canvas to show the updated slider position and view
+                                     canvas->refresh();
+                                 }
+                             }
+                         }
+                     }
+                 }
+             }
+         }
+         // --- End Sync Layer Preview Logic ---
+
          Layout();
          Refresh();
      }

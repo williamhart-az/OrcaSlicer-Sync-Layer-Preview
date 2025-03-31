@@ -50,6 +50,7 @@ protected:
     CheckBox* m_cb_sup_sound;
     CheckBox* m_cb_filament_tangle;
     CheckBox* m_cb_nozzle_blob;
+    CheckBox* m_cb_sync_layer_preview; // Added for layer sync feature
     Label* text_first_layer;
     Label* text_ai_monitoring;
     Label* text_ai_monitoring_caption;

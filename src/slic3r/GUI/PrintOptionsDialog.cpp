@@ -74,6 +74,15 @@ PrintOptionsDialog::PrintOptionsDialog(wxWindow* parent)
         evt.Skip();
         });
 
+    // Bind event for the new sync layer preview checkbox
+    m_cb_sync_layer_preview->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& evt) {
+        // Save the state to AppConfig
+        wxGetApp().app_config->set_bool("sync_layer_preview", m_cb_sync_layer_preview->GetValue());
+        // Propagate the change immediately if needed, or rely on reading it elsewhere
+        // wxGetApp().plater()->update_preview_sync_setting(m_cb_sync_layer_preview->GetValue()); // Example if direct update is needed
+        evt.Skip();
+    });
+
     wxGetApp().UpdateDlgDarkUI(this);
 }
 
@@ -190,6 +199,10 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
     m_cb_sup_sound->SetValue(obj_->xcam_allow_prompt_sound);
     m_cb_filament_tangle->SetValue(obj_->xcam_filament_tangle_detect);
     m_cb_nozzle_blob->SetValue(obj_->nozzle_blob_detection_enabled);
+
+    // Load initial state for the sync layer preview checkbox from AppConfig
+    m_cb_sync_layer_preview->SetValue(wxGetApp().app_config->get_bool("sync_layer_preview"));
+
 
     m_cb_ai_monitoring->SetValue(obj_->xcam_ai_monitoring);
     for (auto i = AiMonitorSensitivityLevel::LOW; i < LEVELS_NUM; i = (AiMonitorSensitivityLevel) (i + 1)) {
@@ -371,6 +384,25 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line7 = new StaticLine(parent, false);
     line7->SetLineColour(STATIC_BOX_LINE_COL);
     sizer->Add(line7, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(20));
+
+    // --- Add Sync Layer Preview Checkbox ---
+    auto line8 = new StaticLine(parent, false); // New separator line
+    line8->SetLineColour(STATIC_BOX_LINE_COL);
+    sizer->Add(line8, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(20));
+    sizer->Add(0, 0, 0, wxTOP, FromDIP(20));
+
+    line_sizer = new wxBoxSizer(wxHORIZONTAL);
+    m_cb_sync_layer_preview = new CheckBox(parent);
+    auto text_sync_layer_preview = new Label(parent, _L("Sync Preview Layer with Print Progress"));
+    text_sync_layer_preview->SetFont(Label::Body_14);
+    line_sizer->Add(FromDIP(5), 0, 0, 0);
+    line_sizer->Add(m_cb_sync_layer_preview, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
+    line_sizer->Add(text_sync_layer_preview, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
+    sizer->Add(0, 0, 0, wxTOP, FromDIP(15));
+    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    line_sizer->Add(FromDIP(5), 0, 0, 0);
+    // --- End Sync Layer Preview Checkbox ---
+
 
     text_nozzle_blob->Hide();
     m_cb_nozzle_blob->Hide();
